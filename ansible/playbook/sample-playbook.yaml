@@ -1,0 +1,33 @@
+## ansible-playbook -i ./hosts --private-key terraform/id_rsa ansible/playbook/sample-playbook.yaml
+---
+- hosts: frontend
+  become: yes # uses root user
+  remote_user: ubuntu
+  tasks:
+  - name: Install Nginx
+    apt:
+      name: nginx
+      state: latest
+      update_cache: yes # make apt-get update
+  
+  - name: Enable auto start of Nginx
+    service:
+      name: nginx
+      enabled: yes
+
+  - name: Starting Nginx
+    service:
+      name: nginx
+      state: started
+
+  - name: Replace index page
+    template:
+      src: ./assets/index.nginx.html.j2
+      dest: /var/www/html/index.html
+    notify: Restart_Nginx
+          
+  handlers:
+  - name: Restart_Nginx
+    service:
+      name: nginx
+      state: restarted

@@ -1,0 +1,8 @@
+.terraform
+.terraform.lock.hcl
+*.tfstate*
+*.tfvars
+id_rsa
+id_rsa.pub
+hosts
+**/vars/**.yml
