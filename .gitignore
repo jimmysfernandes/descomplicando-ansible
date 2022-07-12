@@ -6,3 +6,4 @@ id_rsa
 id_rsa.pub
 hosts
 **/vars/**.yml
+*.pem
