@@ -1,0 +1,51 @@
+---
+- name: Removing old installation
+  command: kubeadm reset --force
+  register: kubeadm_reset
+
+- name: Download kubeadm images
+  command: kubeadm config images pull
+
+- name: Initialize k8s cluster
+  command: kubeadm init --apiserver-advertise-address {{ K8S_MASTER_NODE_IP }}
+  register: kubeadm_init
+
+- name: Creating k8s config folder
+  raw: mkdir -p ~/.kube
+
+- name: Creating k8s config file
+  raw: ln -f -s /etc/kubernetes/admin.conf ~/.kube/config
+
+- name: Check API Server
+  wait_for:
+    host: "{{ K8S_MASTER_PUBLIC_NODE_IP }}"
+    port: "{{ K8S_API_SECURE_PORT }}"
+    state: "started"
+
+- name: Adding pod network (Weavenet)
+  command: kubectl apply -f {{ weavenet_url }}
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: weavenet_result
+
+- name: Get token k8s
+  shell: kubeadm token list | cut -d ' ' -f1  | sed -n '2p'
+  register: k8s_token
+
+- name: CA Hash
+  shell: openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+  register: k8s_master_ca_hash
+
+- name: Save data at dummy host
+  add_host:
+    name: "K8S_TOKEN_HOLDER"
+    token: "{{ k8s_token.stdout }}"
+    hash: "{{ k8s_master_ca_hash.stdout }}"
+
+- name: Print token
+  debug:
+    msg: "[MASTER] K8S_TOKEN_HOLDER - {{ hostvars['K8S_TOKEN_HOLDER']['token'] }}"
+
+- name: Print hash
+  debug:
+    msg: "[MASTER] K8S_TOKEN_HOLDER - {{ hostvars['K8S_TOKEN_HOLDER']['hash'] }}"
