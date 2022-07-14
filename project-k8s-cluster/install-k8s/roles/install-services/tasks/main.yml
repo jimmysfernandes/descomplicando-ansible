@@ -12,6 +12,10 @@
     repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
     state: present
 
+- name: "Update repositories"
+  apt:
+    update_cache: yes
+
 - name: Instaling k8s services
   apt:
     name: "{{ packages }}"
@@ -20,3 +24,13 @@
     - kubelet
     - kubeadm
     - kubectl
+
+- name: Remove file /etc/containerd/config.toml
+  ansible.builtin.file:
+    path: /etc/containerd/config.toml
+    state: absent
+
+- name: Restart containerd service
+  service:
+    name: containerd
+    state: restarted
