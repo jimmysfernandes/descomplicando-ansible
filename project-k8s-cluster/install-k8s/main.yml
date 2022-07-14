@@ -1,0 +1,24 @@
+- hosts: all
+  become: yes
+  user: ubuntu
+  gather_facts: no
+  pre_tasks:
+  - name: "Update repositories"
+    apt:
+      update_cache: yes
+  - name: "Disable swap"
+    raw: swapoff -a
+  roles:
+  - { role: install-services, tags: [ "install_k8s_role" ] }
+
+- hosts: k8s-master
+  become: yes
+  user: ubuntu
+  roles:
+  - { role: init-cluster, tags: [ "init_cluster_role" ]}
+
+- hosts: k8s-workers
+  become: yes
+  user: ubuntu
+  roles:
+  - { role: join-workers, tags: [ "join_workers_role" ] }
